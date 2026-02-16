@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/liquor_inventory
+    username: liquor_user
+    password: liquor_password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-use-a-long-random-string}
+  expiration: 86400000 # 24 hours in milliseconds
