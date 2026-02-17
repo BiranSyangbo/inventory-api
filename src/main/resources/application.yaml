@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/liquor_inventory
-    username: liquor_user
-    password: liquor_password
+    url: jdbc:postgresql://0.0.0.0:2345/inventory
+    username: inventory
+    password: inventory
   jpa:
     hibernate:
       ddl-auto: update
