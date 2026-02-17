@@ -10,4 +10,7 @@ import lombok.NoArgsConstructor;
 public class JwtAuthenticationResponse {
 
     private String accessToken;
+    private String refreshToken;
+    private Long expiresIn;       // access token TTL in seconds
+    private Long refreshExpiresIn; // refresh token TTL in seconds
 }

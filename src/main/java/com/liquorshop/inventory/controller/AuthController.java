@@ -2,6 +2,7 @@ package com.liquorshop.inventory.controller;
 
 import com.liquorshop.inventory.dto.JwtAuthenticationResponse;
 import com.liquorshop.inventory.dto.LoginRequest;
+import com.liquorshop.inventory.dto.RefreshTokenRequest;
 import com.liquorshop.inventory.dto.RegisterRequest;
 import com.liquorshop.inventory.dto.TokenValidationResponse;
 import com.liquorshop.inventory.security.JwtTokenProvider;
@@ -45,6 +46,17 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid username or password"));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        try {
+            JwtAuthenticationResponse response = authService.refreshTokens(request.getRefreshToken());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Invalid or expired refresh token"));
         }
     }
 
@@ -105,17 +117,16 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        // Since JWT is stateless, logout is handled client-side by removing the token
-        // This endpoint can be used for logging purposes or future token blacklisting
+    public ResponseEntity<?> logout(@RequestBody(required = false) java.util.Map<String, String> body) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+        String refreshToken = body != null ? body.get("refreshToken") : null;
+        if (refreshToken != null) {
+            authService.logout(refreshToken);
+        }
         if (authentication != null) {
             SecurityContextHolder.clearContext();
-            return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
         }
-        
-        return ResponseEntity.ok(Map.of("message", "No active session"));
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
     @GetMapping("/me")
