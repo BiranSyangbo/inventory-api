@@ -1,13 +1,14 @@
-package com.liquorshop.inventory.model;
+package com.liquorshop.inventory.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Batch {
+public class BatchEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,25 +25,31 @@ public class Batch {
     @NotNull(message = "Product is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    private ProductEntity product;
 
     @Column(name = "batch_code")
     private String batchCode;
 
-    @Column(name = "expiry_date")
-    private String expiryDate;
+    @Column(name = "purchase_date", nullable = false)
+    private LocalDate purchaseDate;
 
-    @NotNull(message = "Purchase price is required")
+    // Nullable — only set when product has an expiry date
+    @Column(name = "expiry_date")
+    private LocalDate expiryDate;
+
+    // Cost per unit at time of purchase; kept for reference and history
+    @NotNull
     @Min(value = 0, message = "Purchase price cannot be negative")
     @Column(name = "purchase_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal purchasePrice;
 
-    @NotNull(message = "Selling price is required")
-    @Min(value = 0, message = "Selling price cannot be negative")
-    @Column(name = "selling_price", nullable = false, precision = 10, scale = 2)
-    private BigDecimal sellingPrice;
+    @NotNull
+    @Min(value = 0)
+    @Column(name = "original_quantity", nullable = false)
+    private Integer originalQuantity;
 
-    @NotNull(message = "Current quantity is required")
+    // Decremented on every sale that draws from this batch
+    @NotNull
     @Min(value = 0, message = "Current quantity cannot be negative")
     @Column(name = "current_quantity", nullable = false)
     private Integer currentQuantity;
@@ -56,5 +63,8 @@ public class Batch {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (purchaseDate == null) {
+            purchaseDate = LocalDate.now();
+        }
     }
 }

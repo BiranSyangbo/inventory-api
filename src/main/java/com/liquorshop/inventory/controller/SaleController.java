@@ -1,5 +1,7 @@
 package com.liquorshop.inventory.controller;
 
+import com.liquorshop.inventory.dto.PaymentRequest;
+import com.liquorshop.inventory.dto.PaymentResponse;
 import com.liquorshop.inventory.dto.SaleInput;
 import com.liquorshop.inventory.dto.SaleResponse;
 import com.liquorshop.inventory.service.SaleService;
@@ -9,31 +11,38 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 
 @RestController
-@RequestMapping("/sales")
+@RequestMapping("/api/sales")
 @RequiredArgsConstructor
 public class SaleController {
 
     private final SaleService saleService;
 
-    @PostMapping
-    public ResponseEntity<?> createSale(@Valid @RequestBody SaleInput input) {
-        try {
-            if (input.getItems() == null || input.getItems().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "At least one sale item is required"));
-            }
+    @GetMapping
+    public ResponseEntity<List<SaleResponse>> getAll() {
+        return ResponseEntity.ok(saleService.getAll());
+    }
 
-            SaleResponse sale = saleService.createSale(input);
-            return ResponseEntity.status(HttpStatus.CREATED).body(sale);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to create sale"));
-        }
+    @GetMapping("/{id}")
+    public ResponseEntity<SaleResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(saleService.getById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<SaleResponse> create(@Valid @RequestBody SaleInput input) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(saleService.create(input));
+    }
+
+    @PostMapping("/{id}/payments")
+    public ResponseEntity<PaymentResponse> addPayment(@PathVariable Long id,
+                                                       @Valid @RequestBody PaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(saleService.addPayment(id, request));
+    }
+
+    @GetMapping("/{id}/payments")
+    public ResponseEntity<List<PaymentResponse>> getPayments(@PathVariable Long id) {
+        return ResponseEntity.ok(saleService.getPayments(id));
     }
 }

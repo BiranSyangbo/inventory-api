@@ -1,6 +1,6 @@
 package com.liquorshop.inventory.security;
 
-import com.liquorshop.inventory.model.User;
+import com.liquorshop.inventory.entity.UserEntity;
 import com.liquorshop.inventory.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,9 +18,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        UserEntity userEntity = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        return user;
+        return userEntity;
     }
 }

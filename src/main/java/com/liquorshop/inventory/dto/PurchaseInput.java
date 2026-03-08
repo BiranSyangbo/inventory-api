@@ -2,23 +2,30 @@ package com.liquorshop.inventory.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class PurchaseInput {
 
-    private String supplierName;
+    @NotNull(message = "Supplier ID is required")
+    private Long supplierId;
 
-    private String invoiceNumber;
+    private String vatBillNumber;
 
     private LocalDate purchaseDate;
+
+    private BigDecimal invoiceAmount;
+
+    private BigDecimal vatAmount = BigDecimal.ZERO;
+
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    private String remarks;
 
     @NotEmpty(message = "At least one line item is required")
     @Valid

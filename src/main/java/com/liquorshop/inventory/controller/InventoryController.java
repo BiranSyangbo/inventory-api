@@ -11,28 +11,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/inventory")
+@RequestMapping("/api/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @GetMapping("/current")
+    @GetMapping
     public ResponseEntity<List<CurrentInventoryResponse>> getCurrentInventory() {
-        List<CurrentInventoryResponse> inventory = inventoryService.getCurrentInventory();
-        return ResponseEntity.ok(inventory);
+        return ResponseEntity.ok(inventoryService.getCurrentInventory());
     }
 
-    @GetMapping("/low")
+    @GetMapping("/low-stock")
     public ResponseEntity<List<LowStockResponse>> getLowStock() {
-        List<LowStockResponse> lowStock = inventoryService.getLowStock();
-        return ResponseEntity.ok(lowStock);
+        return ResponseEntity.ok(inventoryService.getLowStock());
     }
 
     @GetMapping("/expiring")
     public ResponseEntity<List<ExpiringBatchResponse>> getExpiringBatches(
             @RequestParam(required = false) Integer days) {
-        List<ExpiringBatchResponse> expiringBatches = inventoryService.getExpiringBatches(days);
-        return ResponseEntity.ok(expiringBatches);
+        return ResponseEntity.ok(inventoryService.getExpiringBatches(days));
     }
 }

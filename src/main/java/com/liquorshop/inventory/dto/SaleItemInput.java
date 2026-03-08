@@ -1,24 +1,21 @@
 package com.liquorshop.inventory.dto;
 
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class SaleItemInput {
 
-    @NotNull(message = "product_id is required")
+    @NotNull(message = "Product ID is required")
     private Long productId;
 
-    @NotNull(message = "quantity is required")
-    @Min(value = 1, message = "quantity must be positive")
+    @NotNull(message = "Quantity is required")
+    @Min(value = 1, message = "Quantity must be at least 1")
     private Integer quantity;
 
+    // Optional override; if null: auto-filled from customer template or product.sellingPrice
     private BigDecimal unitPrice;
 }

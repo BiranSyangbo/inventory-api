@@ -3,8 +3,8 @@ package com.liquorshop.inventory.service;
 import com.liquorshop.inventory.dto.CurrentInventoryResponse;
 import com.liquorshop.inventory.dto.ExpiringBatchResponse;
 import com.liquorshop.inventory.dto.LowStockResponse;
-import com.liquorshop.inventory.model.Batch;
-import com.liquorshop.inventory.model.Product;
+import com.liquorshop.inventory.entity.BatchEntity;
+import com.liquorshop.inventory.entity.ProductEntity;
 import com.liquorshop.inventory.repository.BatchRepository;
 import com.liquorshop.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,137 +25,78 @@ public class InventoryService {
     private final BatchRepository batchRepository;
 
     public List<CurrentInventoryResponse> getCurrentInventory() {
-        List<Product> products = productRepository.findAllByOrderByNameAsc();
+        return productRepository.findAllByDeletedFalseOrderByNameAsc()
+                .stream()
+                .map(product -> {
+                    int totalQty = batchRepository.sumCurrentQuantityByProductId(product.getId());
+                    BigDecimal stockValue = product.getAverageCost()
+                            .multiply(BigDecimal.valueOf(totalQty));
 
-        return products.stream()
-            .map(product -> {
-                List<Batch> batches = batchRepository.findByProductId(product.getId());
-                
-                Integer totalQuantity = batches.stream()
-                    .mapToInt(Batch::getCurrentQuantity)
-                    .sum();
-
-                BigDecimal totalValue = batches.stream()
-                    .map(b -> b.getSellingPrice().multiply(BigDecimal.valueOf(b.getCurrentQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                Integer minStock = product.getMinStock() != null ? product.getMinStock() : 0;
-                Boolean isLowStock = totalQuantity < minStock;
-
-                CurrentInventoryResponse response = new CurrentInventoryResponse();
-                response.setProductId(product.getId());
-                response.setName(product.getName());
-                response.setBrand(product.getBrand());
-                response.setCategory(product.getCategory());
-                response.setVolumeMl(product.getVolumeMl());
-                response.setUnit(product.getUnit());
-                response.setMinStock(minStock);
-                response.setTotalQuantity(totalQuantity);
-                response.setTotalValue(totalValue);
-                response.setIsLowStock(isLowStock);
-
-                return response;
-            })
-            .collect(Collectors.toList());
+                    CurrentInventoryResponse r = new CurrentInventoryResponse();
+                    r.setProductId(product.getId());
+                    r.setName(product.getName());
+                    r.setBrand(product.getBrand());
+                    r.setCategory(product.getCategory());
+                    r.setVolumeMl(product.getVolumeMl());
+                    r.setUnit(product.getUnit());
+                    r.setMinStock(product.getMinStock());
+                    r.setTotalQuantity(totalQty);
+                    r.setAverageCost(product.getAverageCost());
+                    r.setSellingPrice(product.getSellingPrice());
+                    r.setTotalValue(stockValue);
+                    r.setIsLowStock(totalQty < product.getMinStock());
+                    return r;
+                })
+                .collect(Collectors.toList());
     }
 
     public List<LowStockResponse> getLowStock() {
-        List<Product> products = productRepository.findAllByOrderByNameAsc();
+        return productRepository.findAllByDeletedFalseOrderByNameAsc()
+                .stream()
+                .map(product -> {
+                    int totalQty = batchRepository.sumCurrentQuantityByProductId(product.getId());
+                    if (totalQty >= product.getMinStock()) return null;
 
-        return products.stream()
-            .map(product -> {
-                List<Batch> batches = batchRepository.findByProductId(product.getId());
-                
-                Integer totalQuantity = batches.stream()
-                    .mapToInt(Batch::getCurrentQuantity)
-                    .sum();
-
-                Integer minStock = product.getMinStock() != null ? product.getMinStock() : 0;
-
-                if (totalQuantity >= minStock) {
-                    return null; // Filter out products that are not low stock
-                }
-
-                LowStockResponse response = new LowStockResponse();
-                response.setProductId(product.getId());
-                response.setName(product.getName());
-                response.setBrand(product.getBrand());
-                response.setCategory(product.getCategory());
-                response.setVolumeMl(product.getVolumeMl());
-                response.setUnit(product.getUnit());
-                response.setMinStock(minStock);
-                response.setTotalQuantity(totalQuantity);
-
-                return response;
-            })
-            .filter(response -> response != null)
-            .sorted((a, b) -> Integer.compare(a.getTotalQuantity(), b.getTotalQuantity()))
-            .collect(Collectors.toList());
+                    LowStockResponse r = new LowStockResponse();
+                    r.setProductId(product.getId());
+                    r.setName(product.getName());
+                    r.setBrand(product.getBrand());
+                    r.setCategory(product.getCategory());
+                    r.setVolumeMl(product.getVolumeMl());
+                    r.setUnit(product.getUnit());
+                    r.setMinStock(product.getMinStock());
+                    r.setTotalQuantity(totalQty);
+                    return r;
+                })
+                .filter(r -> r != null)
+                .sorted((a, b) -> Integer.compare(a.getTotalQuantity(), b.getTotalQuantity()))
+                .collect(Collectors.toList());
     }
 
     public List<ExpiringBatchResponse> getExpiringBatches(Integer days) {
-        if (days == null || days <= 0) {
-            days = 30; // Default to 30 days
-        }
+        int window = (days != null && days > 0) ? days : 30;
+        LocalDate cutoff = LocalDate.now().plusDays(window);
+        LocalDate today = LocalDate.now();
 
-        LocalDate cutoffDate = LocalDate.now().plusDays(days);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return batchRepository.findExpiringWithStock(cutoff)
+                .stream()
+                .map(batch -> {
+                    String status = batch.getExpiryDate().isBefore(today) ? "expired" : "expiring_soon";
 
-        List<Batch> batches = batchRepository.findAll().stream()
-            .filter(batch -> 
-                batch.getExpiryDate() != null && 
-                !batch.getExpiryDate().isEmpty() &&
-                batch.getCurrentQuantity() > 0
-            )
-            .filter(batch -> {
-                try {
-                    LocalDate expiryDate = LocalDate.parse(batch.getExpiryDate(), formatter);
-                    return expiryDate.isBefore(cutoffDate) || expiryDate.isEqual(cutoffDate);
-                } catch (Exception e) {
-                    return false; // Skip batches with invalid date format
-                }
-            })
-            .sorted((a, b) -> {
-                try {
-                    LocalDate dateA = LocalDate.parse(a.getExpiryDate(), formatter);
-                    LocalDate dateB = LocalDate.parse(b.getExpiryDate(), formatter);
-                    return dateA.compareTo(dateB);
-                } catch (Exception e) {
-                    return 0;
-                }
-            })
-            .collect(Collectors.toList());
-
-        LocalDate now = LocalDate.now();
-
-        return batches.stream()
-            .map(batch -> {
-                String status = "expiring_soon";
-                try {
-                    LocalDate expiryDate = LocalDate.parse(batch.getExpiryDate(), formatter);
-                    if (expiryDate.isBefore(now)) {
-                        status = "expired";
-                    }
-                } catch (Exception e) {
-                    // Keep default status
-                }
-
-                ExpiringBatchResponse response = new ExpiringBatchResponse();
-                response.setId(batch.getId());
-                response.setProductId(batch.getProduct().getId());
-                response.setBatchCode(batch.getBatchCode());
-                response.setExpiryDate(batch.getExpiryDate());
-                response.setPurchasePrice(batch.getPurchasePrice());
-                response.setSellingPrice(batch.getSellingPrice());
-                response.setCurrentQuantity(batch.getCurrentQuantity());
-                response.setLocation(batch.getLocation());
-                response.setCreatedAt(batch.getCreatedAt());
-                response.setProductName(batch.getProduct().getName());
-                response.setProductBrand(batch.getProduct().getBrand());
-                response.setStatus(status);
-
-                return response;
-            })
-            .collect(Collectors.toList());
+                    ExpiringBatchResponse r = new ExpiringBatchResponse();
+                    r.setId(batch.getId());
+                    r.setProductId(batch.getProduct().getId());
+                    r.setProductName(batch.getProduct().getName());
+                    r.setProductBrand(batch.getProduct().getBrand());
+                    r.setBatchCode(batch.getBatchCode());
+                    r.setExpiryDate(batch.getExpiryDate());
+                    r.setPurchasePrice(batch.getPurchasePrice());
+                    r.setCurrentQuantity(batch.getCurrentQuantity());
+                    r.setLocation(batch.getLocation());
+                    r.setCreatedAt(batch.getCreatedAt());
+                    r.setStatus(status);
+                    return r;
+                })
+                .collect(Collectors.toList());
     }
 }

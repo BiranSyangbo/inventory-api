@@ -3,8 +3,8 @@ package com.liquorshop.inventory.service;
 import com.liquorshop.inventory.dto.JwtAuthenticationResponse;
 import com.liquorshop.inventory.dto.LoginRequest;
 import com.liquorshop.inventory.dto.RegisterRequest;
-import com.liquorshop.inventory.model.RefreshToken;
-import com.liquorshop.inventory.model.User;
+import com.liquorshop.inventory.entity.RefreshTokenEntity;
+import com.liquorshop.inventory.entity.UserEntity;
 import com.liquorshop.inventory.repository.UserRepository;
 import com.liquorshop.inventory.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -33,21 +33,16 @@ public class AuthService {
 
     public JwtAuthenticationResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username is already taken!");
+            throw new RuntimeException("Username is already exists!");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email is already in use!");
-        }
+        UserEntity userEntity = new UserEntity();
+        userEntity.setUsername(request.getUsername());
+        userEntity.setPassword(passwordEncoder.encode(request.getPassword()));
+        userEntity.setEnabled(true);
+        userRepository.save(userEntity);
 
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setEnabled(true);
-        userRepository.save(user);
-
-        String accessToken = tokenProvider.generateToken(user.getUsername());
-        String refreshToken = refreshTokenService.createRefreshToken(user);
+        String accessToken = tokenProvider.generateToken(userEntity.getUsername());
+        String refreshToken = refreshTokenService.createRefreshToken(userEntity);
 
         return buildResponse(accessToken, refreshToken);
     }
@@ -61,31 +56,31 @@ public class AuthService {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        User user = (User) authentication.getPrincipal();
+        UserEntity userEntity = (UserEntity) authentication.getPrincipal();
         String accessToken = tokenProvider.generateToken(authentication);
-        String refreshToken = refreshTokenService.createRefreshToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(userEntity);
 
         return buildResponse(accessToken, refreshToken);
     }
 
     public JwtAuthenticationResponse refreshTokens(String refreshTokenValue) {
-        RefreshToken refreshToken = refreshTokenService.findByToken(refreshTokenValue)
+        RefreshTokenEntity refreshTokenEntity = refreshTokenService.findByToken(refreshTokenValue)
                 .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
-        if (refreshTokenService.isExpired(refreshToken)) {
+        if (refreshTokenService.isExpired(refreshTokenEntity)) {
             refreshTokenService.revokeByToken(refreshTokenValue);
             throw new RuntimeException("Refresh token has expired");
         }
 
-        User user = refreshToken.getUser();
-        if (!user.isEnabled()) {
+        UserEntity userEntity = refreshTokenEntity.getUser();
+        if (!userEntity.isEnabled()) {
             throw new RuntimeException("User account is disabled");
         }
 
         // Rotate: revoke current refresh token and issue new one
         refreshTokenService.revokeByToken(refreshTokenValue);
-        String newAccessToken = tokenProvider.generateToken(user.getUsername());
-        String newRefreshToken = refreshTokenService.createRefreshToken(user);
+        String newAccessToken = tokenProvider.generateToken(userEntity.getUsername());
+        String newRefreshToken = refreshTokenService.createRefreshToken(userEntity);
 
         return buildResponse(newAccessToken, newRefreshToken);
     }

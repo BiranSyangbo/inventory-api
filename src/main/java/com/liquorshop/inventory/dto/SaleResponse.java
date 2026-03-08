@@ -1,33 +1,40 @@
 package com.liquorshop.inventory.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class SaleResponse {
 
     private Long id;
+    private Long customerId;
+    private String customerName;
+    private String invoiceNumber;
     private LocalDateTime saleDate;
     private BigDecimal totalAmount;
-    private List<SaleLineInfo> lines;
+    private BigDecimal discount;
+    private BigDecimal vatAmount;
+    private String paymentStatus;
+    private String notes;
+    private LocalDateTime createdAt;
+    private List<SaleLineResponse> lines;
+    private BigDecimal totalPaid;
+    private BigDecimal outstandingAmount;
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SaleLineInfo {
+    @Data
+    public static class SaleLineResponse {
         private Long id;
+        private Long productId;
+        private String productName;
         private Long batchId;
+        private String batchCode;
         private Integer quantity;
         private BigDecimal unitPrice;
+        private BigDecimal costPriceAtSale;
+        private BigDecimal lineTotal;
+        private BigDecimal profit; // (unitPrice - costPriceAtSale) * quantity
     }
 }

@@ -1,6 +1,7 @@
 package com.liquorshop.inventory.controller;
 
-import com.liquorshop.inventory.model.Product;
+import com.liquorshop.inventory.dto.ProductRequest;
+import com.liquorshop.inventory.dto.ProductResponse;
 import com.liquorshop.inventory.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,57 +10,44 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/api/products")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(products);
+    public ResponseEntity<List<ProductResponse>> getAll() {
+        return ResponseEntity.ok(productService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getById(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> createProduct(@Valid @RequestBody Product product) {
-        if (product.getName() == null || product.getName().trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Name is required"));
-        }
-        
-        Product createdProduct = productService.createProduct(product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
-        Optional<Product> existingProduct = productService.getProductById(id);
-        
-        if (existingProduct.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Product not found"));
-        }
+    public ResponseEntity<ProductResponse> update(@PathVariable Long id,
+                                                   @Valid @RequestBody ProductRequest request) {
+        return ResponseEntity.ok(productService.update(id, request));
+    }
 
-        Product updatedProduct = productService.updateProduct(id, productDetails)
-                .orElseThrow(() -> new RuntimeException("Failed to update product"));
-        
-        return ResponseEntity.ok(updatedProduct);
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<Void> toggleStatus(@PathVariable Long id) {
+        productService.toggleStatus(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
-        boolean deleted = productService.deleteProduct(id);
-        
-        if (!deleted) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Product not found"));
-        }
-        
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        productService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

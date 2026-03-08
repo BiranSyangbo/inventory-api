@@ -2,21 +2,30 @@ package com.liquorshop.inventory.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class SaleInput {
+
+    // Null for walk-in; when set, unit prices auto-filled from customer price template
+    private Long customerId;
 
     private LocalDateTime saleDate;
 
-    @NotEmpty(message = "At least one sale item is required")
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    private BigDecimal vatAmount = BigDecimal.ZERO;
+
+    // PAID | PARTIAL | CREDIT  (default PAID)
+    private String paymentStatus = "PAID";
+
+    private String notes;
+
+    @NotEmpty(message = "At least one item is required")
     @Valid
     private List<SaleItemInput> items;
 }
