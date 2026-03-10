@@ -145,7 +145,7 @@ public class PurchaseService {
     // ── Weighted Average Cost ────────────────────────────────────────────────
 
     private void updateWeightedAverageCost(ProductEntity product, int newQty, BigDecimal newPrice) {
-        int oldQty = batchRepository.sumCurrentQuantityByProductId(product.getId());
+        int oldQty = product.getQuantity();
         // Subtract the newQty just added (batch already saved before this call)
         int existingQty = oldQty - newQty;
 
@@ -159,6 +159,7 @@ public class PurchaseService {
             newAvg = numerator.divide(BigDecimal.valueOf(oldQty), 4, RoundingMode.HALF_UP);
         }
 
+        product.setQuantity(oldQty + newQty);
         product.setAverageCost(newAvg);
         productRepository.save(product);
     }

@@ -43,7 +43,9 @@ dependencies {
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 
-
+	// Excel / CSV bulk import
+	implementation 'org.apache.poi:poi-ooxml:5.3.0'
+	implementation 'com.opencsv:opencsv:5.9'
 }
 
 tasks.named('test') {

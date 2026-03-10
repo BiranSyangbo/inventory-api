@@ -1,16 +1,7 @@
 package com.liquorshop.inventory.service;
 
-import com.liquorshop.inventory.dto.PaymentRequest;
-import com.liquorshop.inventory.dto.PaymentResponse;
-import com.liquorshop.inventory.dto.SaleInput;
-import com.liquorshop.inventory.dto.SaleItemInput;
-import com.liquorshop.inventory.dto.SaleResponse;
-import com.liquorshop.inventory.entity.BatchEntity;
-import com.liquorshop.inventory.entity.CustomerEntity;
-import com.liquorshop.inventory.entity.ProductEntity;
-import com.liquorshop.inventory.entity.SaleEntity;
-import com.liquorshop.inventory.entity.SaleLineEntity;
-import com.liquorshop.inventory.entity.SalePaymentEntity;
+import com.liquorshop.inventory.dto.*;
+import com.liquorshop.inventory.entity.*;
 import com.liquorshop.inventory.exception.ResourceNotFoundException;
 import com.liquorshop.inventory.repository.BatchRepository;
 import com.liquorshop.inventory.repository.ProductRepository;
@@ -22,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +48,9 @@ public class SaleService {
 
         SaleEntity sale = new SaleEntity();
         sale.setCustomer(customer);
-        sale.setInvoiceNumber(generateInvoiceNumber());
+        sale.setInvoiceNumber(input.getInvoiceNumber() != null && !input.getInvoiceNumber().isBlank()
+                ? input.getInvoiceNumber()
+                : generateInvoiceNumber());
         sale.setSaleDate(input.getSaleDate() != null ? input.getSaleDate() : LocalDateTime.now());
         sale.setDiscount(input.getDiscount() != null ? input.getDiscount() : BigDecimal.ZERO);
         sale.setVatAmount(input.getVatAmount() != null ? input.getVatAmount() : BigDecimal.ZERO);
@@ -83,12 +75,13 @@ public class SaleService {
             List<BatchEntity> batches = batchRepository.findAvailableByProductId(product.getId());
 
             int totalAvailable = batches.stream().mapToInt(BatchEntity::getCurrentQuantity).sum();
-            if (totalAvailable < itemInput.getQuantity()) {
+            int remaining = itemInput.getQuantity();
+
+            if (totalAvailable < remaining) {
                 throw new IllegalArgumentException(
                         "Insufficient stock for product '" + product.getName() + "'. Available: " + totalAvailable);
             }
 
-            int remaining = itemInput.getQuantity();
             for (BatchEntity batch : batches) {
                 if (remaining <= 0) break;
 
@@ -109,6 +102,8 @@ public class SaleService {
                 totalAmount = totalAmount.add(line.getLineTotal());
                 remaining -= take;
             }
+            product.setQuantity(product.getQuantity() - remaining);
+            productRepository.save(product);
         }
 
         sale.setTotalAmount(totalAmount);

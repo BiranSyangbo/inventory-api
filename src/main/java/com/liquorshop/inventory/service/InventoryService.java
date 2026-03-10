@@ -3,8 +3,6 @@ package com.liquorshop.inventory.service;
 import com.liquorshop.inventory.dto.CurrentInventoryResponse;
 import com.liquorshop.inventory.dto.ExpiringBatchResponse;
 import com.liquorshop.inventory.dto.LowStockResponse;
-import com.liquorshop.inventory.entity.BatchEntity;
-import com.liquorshop.inventory.entity.ProductEntity;
 import com.liquorshop.inventory.repository.BatchRepository;
 import com.liquorshop.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,7 +28,7 @@ public class InventoryService {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
                 .stream()
                 .map(product -> {
-                    int totalQty = batchRepository.sumCurrentQuantityByProductId(product.getId());
+                    int totalQty = product.getQuantity();
                     BigDecimal stockValue = product.getAverageCost()
                             .multiply(BigDecimal.valueOf(totalQty));
 
@@ -38,7 +38,6 @@ public class InventoryService {
                     r.setBrand(product.getBrand());
                     r.setCategory(product.getCategory());
                     r.setVolumeMl(product.getVolumeMl());
-                    r.setUnit(product.getUnit());
                     r.setMinStock(product.getMinStock());
                     r.setTotalQuantity(totalQty);
                     r.setAverageCost(product.getAverageCost());
@@ -54,7 +53,7 @@ public class InventoryService {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
                 .stream()
                 .map(product -> {
-                    int totalQty = batchRepository.sumCurrentQuantityByProductId(product.getId());
+                    int totalQty = product.getQuantity();
                     if (totalQty >= product.getMinStock()) return null;
 
                     LowStockResponse r = new LowStockResponse();
@@ -63,13 +62,12 @@ public class InventoryService {
                     r.setBrand(product.getBrand());
                     r.setCategory(product.getCategory());
                     r.setVolumeMl(product.getVolumeMl());
-                    r.setUnit(product.getUnit());
                     r.setMinStock(product.getMinStock());
                     r.setTotalQuantity(totalQty);
                     return r;
                 })
-                .filter(r -> r != null)
-                .sorted((a, b) -> Integer.compare(a.getTotalQuantity(), b.getTotalQuantity()))
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparingInt(LowStockResponse::getTotalQuantity))
                 .collect(Collectors.toList());
     }
 
@@ -82,7 +80,7 @@ public class InventoryService {
                 .stream()
                 .map(batch -> {
                     String status = batch.getExpiryDate().isBefore(today) ? "expired" : "expiring_soon";
-
+                    var product = batch.getProduct();
                     ExpiringBatchResponse r = new ExpiringBatchResponse();
                     r.setId(batch.getId());
                     r.setProductId(batch.getProduct().getId());
@@ -91,7 +89,7 @@ public class InventoryService {
                     r.setBatchCode(batch.getBatchCode());
                     r.setExpiryDate(batch.getExpiryDate());
                     r.setPurchasePrice(batch.getPurchasePrice());
-                    r.setCurrentQuantity(batch.getCurrentQuantity());
+                    r.setCurrentQuantity(product.getQuantity());
                     r.setLocation(batch.getLocation());
                     r.setCreatedAt(batch.getCreatedAt());
                     r.setStatus(status);

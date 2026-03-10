@@ -14,6 +14,9 @@ public class SaleInput {
     // Null for walk-in; when set, unit prices auto-filled from customer price template
     private Long customerId;
 
+    // Optional: if set, used as-is instead of auto-generating (e.g. bulk import of historical data)
+    private String invoiceNumber;
+
     private LocalDateTime saleDate;
 
     private BigDecimal discount = BigDecimal.ZERO;

@@ -79,7 +79,6 @@ public class ProductService {
         entity.setBrand(request.getBrand());
         entity.setCategory(request.getCategory());
         entity.setVolumeMl(request.getVolumeMl());
-        entity.setUnit(request.getUnit());
         entity.setBarcode(request.getBarcode());
         if (request.getMinStock() != null) entity.setMinStock(request.getMinStock());
         if (request.getSellingPrice() != null) entity.setSellingPrice(request.getSellingPrice());
@@ -93,7 +92,6 @@ public class ProductService {
         r.setBrand(e.getBrand());
         r.setCategory(e.getCategory());
         r.setVolumeMl(e.getVolumeMl());
-        r.setUnit(e.getUnit());
         r.setBarcode(e.getBarcode());
         r.setMinStock(e.getMinStock());
         r.setSellingPrice(e.getSellingPrice());

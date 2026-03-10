@@ -35,8 +35,17 @@ public class ProductEntity {
     @Column(name = "volume_ml")
     private Integer volumeMl;
 
-    @Column(name = "unit")
-    private String unit;
+    @Column(name = "type", comment = "Contains details like a Full, Half or Quarter")
+    private String type;
+
+    @Column(name = "percentage", comment = "Alcohol percentage")
+    private BigDecimal alcoholPercentage;
+
+    @Column(name = "quantity", comment = "Remaining Stock")
+    private Integer quantity;
+
+    @Column(name = "mrp", comment = "Maximum Retail Price")
+    private Integer mrp;
 
     @Column(name = "barcode", unique = true)
     private String barcode;
