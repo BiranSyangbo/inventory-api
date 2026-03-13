@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.liquorshop.inventory.service.bulk.BulkImportUtils.*;
 import static com.liquorshop.inventory.service.bulk.FileHandler.parseFile;
@@ -31,13 +32,15 @@ public class BulkProductService {
                 req.setName(require(r, 0, "name"));
                 req.setBrand(optional(r, 1));
                 req.setCategory(optional(r, 2));
-                req.setVolumeMl(optionalInt(r, 3));
-                req.setUnit(optional(r, 4));
-                req.setBarcode(optional(r, 5));
-                req.setMinStock(optionalInt(r, 6) != null ? optionalInt(r, 6) : 0);
-                req.setSellingPrice(requireDecimal(r, 7, "selling_price"));
-                String status = optional(r, 8);
+                req.setVolumeMl(optional(r, 3));
+                req.setType(optional(r, 4));
+                req.setAlcoholPercentage(optionalDecimal(r, 5));
+                req.setMrp(optional(r, 6));
+                req.setMinStock(Optional.ofNullable(optionalInt(r, 7)).orElse(0));
+                req.setSellingPrice(requireDecimal(r, 8, "selling_price"));
+                String status = optional(r, 9);
                 req.setStatus(status != null && !status.isBlank() ? status.toUpperCase() : "ACTIVE");
+                req.setBarcode(require(r, 10, "productCode"));
 
                 productService.create(req);
                 result.incrementSuccess();

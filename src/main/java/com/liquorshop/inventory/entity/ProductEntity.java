@@ -33,7 +33,7 @@ public class ProductEntity {
     private String category;
 
     @Column(name = "volume_ml")
-    private Integer volumeMl;
+    private String volumeMl;
 
     @Column(name = "type", comment = "Contains details like a Full, Half or Quarter")
     private String type;
@@ -41,11 +41,11 @@ public class ProductEntity {
     @Column(name = "percentage", comment = "Alcohol percentage")
     private BigDecimal alcoholPercentage;
 
-    @Column(name = "quantity", comment = "Remaining Stock")
-    private Integer quantity;
+    @Column(name = "current_stock", comment = "Remaining Stock")
+    private int currentStock = 0;
 
     @Column(name = "mrp", comment = "Maximum Retail Price")
-    private Integer mrp;
+    private String mrp;
 
     @Column(name = "barcode", unique = true)
     private String barcode;

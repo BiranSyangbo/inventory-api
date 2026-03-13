@@ -102,7 +102,7 @@ public class SaleService {
                 totalAmount = totalAmount.add(line.getLineTotal());
                 remaining -= take;
             }
-            product.setQuantity(product.getQuantity() - remaining);
+            product.setCurrentStock(product.getCurrentStock() - itemInput.getQuantity());
             productRepository.save(product);
         }
 

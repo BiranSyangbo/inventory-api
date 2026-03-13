@@ -468,6 +468,9 @@ export interface ProductRequest {
   brand?: string;
   category?: string;               // Whiskey | Vodka | Beer | Wine | Rum | etc.
   volumeMl?: number;               // 180 | 375 | 750 | 1000
+  type?: string;                   // e.g. "Full" | "Half" | "Quarter"
+  alcoholPercentage?: number;      // e.g. 40.0
+  mrp?: number;                    // Maximum Retail Price (integer)
   unit?: string;
   barcode?: string;
   minStock?: number;               // default 0
@@ -481,6 +484,9 @@ export interface ProductResponse {
   brand: string | null;
   category: string | null;
   volumeMl: number | null;
+  type: string | null;             // e.g. "Full", "Half", "Quarter"
+  alcoholPercentage: string | null; // BigDecimal serialized as string
+  mrp: number | null;              // Maximum Retail Price
   unit: string | null;
   barcode: string | null;
   minStock: number;
@@ -488,7 +494,7 @@ export interface ProductResponse {
   averageCost: string;    // weighted average cost
   status: "ACTIVE" | "INACTIVE";
   createdAt: string;
-  currentStock: number | null; // populated by InventoryService
+  currentStock: number;   // live stock count maintained on the product record
 }
 
 export const productService = {
@@ -508,6 +514,9 @@ export const productService = {
 - Product search/filter by barcode: filter client-side on `barcode` field or implement server-side if list is large.
 - **Low stock indicator**: compare `currentStock` vs `minStock`. If `currentStock <= minStock`, highlight row with `bg-amber-50 border-l-4 border-amber-500`.
 - `averageCost` is read-only — never editable. It is recalculated automatically on each purchase.
+- `mrp` is optional. Show it as "MRP" label if present; otherwise omit the field.
+- `type` is optional free text (e.g. Full / Half / Quarter). Suggest these as a dropdown but allow free entry.
+- `alcoholPercentage` is optional. Display as `"40.0%"` format if present.
 - Category dropdown options: `["Whiskey", "Vodka", "Beer", "Wine", "Rum", "Gin", "Brandy", "Other"]`
 - Volume dropdown: `[180, 375, 750, 1000]` (ml)
 
@@ -1189,18 +1198,21 @@ Row 1 must be a header row (values are ignored — columns are **positional**).
 | 2 | `brand` | No | Brand name |
 | 3 | `category` | No | e.g. Whiskey, Beer |
 | 4 | `volume_ml` | No | 180 / 375 / 750 / 1000 |
-| 5 | `unit` | No | e.g. Bottle |
-| 6 | `barcode` | No | Must be unique if provided |
-| 7 | `min_stock` | No | Default 0 |
-| 8 | `selling_price` | Yes | Decimal, e.g. `520.00` |
-| 9 | `status` | No | `ACTIVE` or `INACTIVE` (default `ACTIVE`) |
+| 5 | `type` | No | e.g. Full, Half, Quarter |
+| 6 | `alcohol_percentage` | No | e.g. `40.00` |
+| 7 | `mrp` | No | Maximum Retail Price (integer) |
+| 8 | `unit` | No | e.g. Bottle |
+| 9 | `barcode` | No | Must be unique if provided |
+| 10 | `min_stock` | No | Default 0 |
+| 11 | `selling_price` | Yes | Decimal, e.g. `520.00` |
+| 12 | `status` | No | `ACTIVE` or `INACTIVE` (default `ACTIVE`) |
 
 **Example:**
 ```
-name,brand,category,volume_ml,unit,barcode,min_stock,selling_price,status
-Royal Stag,Seagram,Whiskey,750,Bottle,RS-750,5,520.00,ACTIVE
-McDowell's No.1,McDowell,Whiskey,750,Bottle,MC-750,5,480.00,ACTIVE
-Kingfisher,United Breweries,Beer,650,Bottle,KF-650,10,120.00,ACTIVE
+name,brand,category,volume_ml,type,alcohol_percentage,mrp,unit,barcode,min_stock,selling_price,status
+Royal Stag,Seagram,Whiskey,750,Full,42.8,550,Bottle,RS-750,5,520.00,ACTIVE
+McDowell's No.1,McDowell,Whiskey,750,Full,42.8,500,Bottle,MC-750,5,480.00,ACTIVE
+Kingfisher,United Breweries,Beer,650,,4.8,,Bottle,KF-650,10,120.00,ACTIVE
 ```
 
 ---
@@ -1294,7 +1306,7 @@ import toast from "react-hot-toast";
 type Entity = "products" | "customers" | "purchases" | "sales";
 
 const ENTITIES: { key: Entity; label: string; description: string }[] = [
-  { key: "products",  label: "Products",  description: "name, brand, category, volume_ml, unit, barcode, min_stock, selling_price, status" },
+  { key: "products",  label: "Products",  description: "name, brand, category, volume_ml, type, alcohol_percentage, mrp, unit, barcode, min_stock, selling_price, status" },
   { key: "customers", label: "Customers", description: "name, phone, address, credit_limit" },
   { key: "purchases", label: "Purchases", description: "supplier_name, vat_bill_number, purchase_date, invoice_amount, vat_amount, discount, remarks, product_barcode, quantity, purchase_price, vat_percent, expiry_date" },
   { key: "sales",     label: "Sales",     description: "invoice_number, sale_date, customer_name, payment_status, discount, vat_amount, notes, product_barcode, quantity, unit_price" },

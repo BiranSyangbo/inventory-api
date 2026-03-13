@@ -12,7 +12,7 @@ public class PriceTemplateResponse {
     private Long productId;
     private String productName;
     private String productBrand;
-    private Integer productVolumeMl;
+    private String productVolumeMl;
     private BigDecimal sellingPrice;
     private BigDecimal standardPrice; // product.sellingPrice for comparison
 }

@@ -28,7 +28,7 @@ public class InventoryService {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
                 .stream()
                 .map(product -> {
-                    int totalQty = product.getQuantity();
+                    int totalQty = product.getCurrentStock();
                     BigDecimal stockValue = product.getAverageCost()
                             .multiply(BigDecimal.valueOf(totalQty));
 
@@ -53,7 +53,7 @@ public class InventoryService {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
                 .stream()
                 .map(product -> {
-                    int totalQty = product.getQuantity();
+                    int totalQty = product.getCurrentStock();
                     if (totalQty >= product.getMinStock()) return null;
 
                     LowStockResponse r = new LowStockResponse();
@@ -80,7 +80,6 @@ public class InventoryService {
                 .stream()
                 .map(batch -> {
                     String status = batch.getExpiryDate().isBefore(today) ? "expired" : "expiring_soon";
-                    var product = batch.getProduct();
                     ExpiringBatchResponse r = new ExpiringBatchResponse();
                     r.setId(batch.getId());
                     r.setProductId(batch.getProduct().getId());
@@ -89,7 +88,7 @@ public class InventoryService {
                     r.setBatchCode(batch.getBatchCode());
                     r.setExpiryDate(batch.getExpiryDate());
                     r.setPurchasePrice(batch.getPurchasePrice());
-                    r.setCurrentQuantity(product.getQuantity());
+                    r.setCurrentQuantity(batch.getCurrentQuantity());
                     r.setLocation(batch.getLocation());
                     r.setCreatedAt(batch.getCreatedAt());
                     r.setStatus(status);

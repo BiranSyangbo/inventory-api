@@ -15,7 +15,7 @@ public class ProductRequest {
 
     private String brand;
     private String category;
-    private Integer volumeMl;
+    private String volumeMl;
     private String unit;
     private String barcode;
 
@@ -27,4 +27,7 @@ public class ProductRequest {
     private BigDecimal sellingPrice;
 
     private String status = "ACTIVE";
+    private String type;
+    private BigDecimal alcoholPercentage;
+    private String mrp;
 }

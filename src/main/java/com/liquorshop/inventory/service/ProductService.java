@@ -4,6 +4,7 @@ import com.liquorshop.inventory.dto.ProductRequest;
 import com.liquorshop.inventory.dto.ProductResponse;
 import com.liquorshop.inventory.entity.ProductEntity;
 import com.liquorshop.inventory.exception.ResourceNotFoundException;
+import com.liquorshop.inventory.mapper.ProductMapper;
 import com.liquorshop.inventory.repository.BatchRepository;
 import com.liquorshop.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,17 +19,17 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final BatchRepository batchRepository;
+    private final ProductMapper productMapper;
 
     @Transactional(readOnly = true)
     public List<ProductResponse> getAll() {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
-                .stream().map(this::toResponse).collect(Collectors.toList());
+                .stream().map(productMapper::toResponse).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ProductResponse getById(Long id) {
-        return toResponse(findOrThrow(id));
+        return this.productMapper.toResponse(findOrThrow(id));
     }
 
     @Transactional
@@ -38,7 +39,7 @@ public class ProductService {
         }
         ProductEntity entity = new ProductEntity();
         applyRequest(entity, request);
-        return toResponse(productRepository.save(entity));
+        return this.productMapper.toResponse(productRepository.save(entity));
     }
 
     @Transactional
@@ -50,7 +51,7 @@ public class ProductService {
             throw new IllegalArgumentException("Barcode already exists: " + request.getBarcode());
         }
         applyRequest(entity, request);
-        return toResponse(productRepository.save(entity));
+        return this.productMapper.toResponse(productRepository.save(entity));
     }
 
     @Transactional
@@ -69,8 +70,7 @@ public class ProductService {
     }
 
     public ProductEntity findOrThrow(Long id) {
-        return productRepository.findById(id)
-                .filter(p -> !p.getDeleted())
+        return productRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
     }
 
@@ -83,22 +83,9 @@ public class ProductService {
         if (request.getMinStock() != null) entity.setMinStock(request.getMinStock());
         if (request.getSellingPrice() != null) entity.setSellingPrice(request.getSellingPrice());
         if (request.getStatus() != null) entity.setStatus(request.getStatus());
+        entity.setType(request.getType());
+        entity.setMrp(request.getMrp());
+        entity.setAlcoholPercentage(request.getAlcoholPercentage());
     }
 
-    ProductResponse toResponse(ProductEntity e) {
-        ProductResponse r = new ProductResponse();
-        r.setId(e.getId());
-        r.setName(e.getName());
-        r.setBrand(e.getBrand());
-        r.setCategory(e.getCategory());
-        r.setVolumeMl(e.getVolumeMl());
-        r.setBarcode(e.getBarcode());
-        r.setMinStock(e.getMinStock());
-        r.setSellingPrice(e.getSellingPrice());
-        r.setAverageCost(e.getAverageCost());
-        r.setStatus(e.getStatus());
-        r.setCreatedAt(e.getCreatedAt());
-        r.setCurrentStock(batchRepository.sumCurrentQuantityByProductId(e.getId()));
-        return r;
-    }
 }

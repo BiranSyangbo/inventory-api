@@ -13,7 +13,7 @@ public class LowStockResponse {
     private String name;
     private String brand;
     private String category;
-    private Integer volumeMl;
+    private String volumeMl;
     private String unit;
     private Integer minStock;
     private Integer totalQuantity;

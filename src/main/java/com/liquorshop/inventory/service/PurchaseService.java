@@ -145,9 +145,7 @@ public class PurchaseService {
     // ── Weighted Average Cost ────────────────────────────────────────────────
 
     private void updateWeightedAverageCost(ProductEntity product, int newQty, BigDecimal newPrice) {
-        int oldQty = product.getQuantity();
-        // Subtract the newQty just added (batch already saved before this call)
-        int existingQty = oldQty - newQty;
+        int existingQty = product.getCurrentStock(); // stock before this purchase line
 
         BigDecimal newAvg;
         if (existingQty <= 0) {
@@ -156,10 +154,10 @@ public class PurchaseService {
             BigDecimal numerator = product.getAverageCost()
                     .multiply(BigDecimal.valueOf(existingQty))
                     .add(newPrice.multiply(BigDecimal.valueOf(newQty)));
-            newAvg = numerator.divide(BigDecimal.valueOf(oldQty), 4, RoundingMode.HALF_UP);
+            newAvg = numerator.divide(BigDecimal.valueOf(existingQty + newQty), 4, RoundingMode.HALF_UP);
         }
 
-        product.setQuantity(oldQty + newQty);
+        product.setCurrentStock(existingQty + newQty);
         product.setAverageCost(newAvg);
         productRepository.save(product);
     }
