@@ -19,8 +19,8 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAll() {
-        return ResponseEntity.ok(productService.getAll());
+    public ResponseEntity<List<ProductResponse>> getAll(@RequestParam(required = false) boolean excludeQuantityZero) {
+        return ResponseEntity.ok(productService.getAll(excludeQuantityZero));
     }
 
     @GetMapping("/{id}")

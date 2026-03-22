@@ -10,6 +10,7 @@ import com.liquorshop.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,9 +23,12 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAll() {
+    public List<ProductResponse> getAll(boolean excludeQuantityZero) {
         return productRepository.findAllByDeletedFalseOrderByNameAsc()
-                .stream().map(productMapper::toResponse).collect(Collectors.toList());
+                .stream()
+                .filter(p -> !excludeQuantityZero || p.getCurrentStock() > 0)
+                .map(productMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

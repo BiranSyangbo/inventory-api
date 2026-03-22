@@ -33,7 +33,7 @@ public class BulkSalesService {
 
         for (Map.Entry<String, List<Integer>> entry : groups.entrySet()) {
             List<Integer> indices = entry.getValue();
-            int firstIdx = indices.getFirst();
+            int firstIdx = indices.stream().findFirst().orElseThrow();
             int firstRowNum = firstIdx + 2;
             try {
 
@@ -78,8 +78,7 @@ public class BulkSalesService {
                                     List<Integer> indices,
                                     ImportResult result) {
 
-        String invoiceNumber = optional(header, 0);
-        String customerName = optional(header, 2);
+        String customerName = optional(header, 1);
 
         Long customerId = resolveCustomer(customerName, indices, result);
 
@@ -89,26 +88,15 @@ public class BulkSalesService {
 
         SaleInput input = new SaleInput();
 
-        input.setInvoiceNumber(
-                Optional.ofNullable(invoiceNumber)
-                        .filter(org.apache.commons.lang3.StringUtils::isNotBlank)
-                        .orElse(null)
-        );
-
-        input.setSaleDate(parseSaleDate(optional(header, 1)));
-
+        input.setSaleDate(parseSaleDate(optional(header, 0)));
         input.setCustomerId(customerId);
-
         input.setPaymentStatus(
-                Optional.ofNullable(optional(header, 3))
+                Optional.ofNullable(optional(header, 2))
                         .map(String::toUpperCase)
                         .orElse("PAID")
         );
-
-        input.setDiscount(optionalDecimalOrZero(header, 4));
-        input.setVatAmount(optionalDecimalOrZero(header, 5));
-        input.setNotes(optional(header, 6));
-
+        input.setDiscount(optionalDecimalOrZero(header, 6));
+        input.setNotes(optional(header, 7));
         input.setItems(new ArrayList<>());
 
         return input;
@@ -145,20 +133,20 @@ public class BulkSalesService {
 
                 String[] r = rows.get(idx);
 
-                String barcode = require(r, 7, "product_barcode");
+                String productCode = require(r, 3, "product_code");
 
-                var productOpt = productRepository.findByBarcodeAndDeletedFalse(barcode);
+                var productOpt = productRepository.findByBarcodeAndDeletedFalse(productCode);
 
                 if (productOpt.isEmpty()) {
-                    result.addError(rowNum, "Product not found by barcode: " + barcode);
+                    result.addError(rowNum, "Product not found by code: " + productCode);
                     continue;
                 }
 
                 SaleItemInput item = new SaleItemInput();
 
                 item.setProductId(productOpt.get().getId());
-                item.setQuantity(requireInt(r, 8, "quantity"));
-                item.setUnitPrice(optionalDecimal(r, 9));
+                item.setQuantity(requireInt(r, 4, "quantity"));
+                item.setUnitPrice(optionalDecimal(r, 5));
 
                 input.getItems().add(item);
 

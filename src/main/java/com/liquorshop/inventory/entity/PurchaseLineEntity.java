@@ -36,7 +36,6 @@ public class PurchaseLineEntity {
     private BatchEntity batch;
 
     @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
     @Column(nullable = false)
     private Integer quantity;
 

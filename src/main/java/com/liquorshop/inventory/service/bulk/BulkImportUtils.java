@@ -91,6 +91,7 @@ public class BulkImportUtils {
         String val = require(row, col, fieldName);
 
         try {
+            val = val.replace(",", "");
             return new BigDecimal(val);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
